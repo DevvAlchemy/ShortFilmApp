@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">ShortFilmApp</string>
+    <string name="list_of_short_films">List of short films</string>
+    <string name="select_genre">Select Genre</string>
+    <string name="movie_title">Movie Title</string>
+    <string-array name="genre_options">
+        <item>All</item>
+        <item>Drama</item>
+        <item>Sci-Fi</item>
+        <item>Romance</item>
+        <item>Comedy</item>
+        <item>Action</item>
+        <item>Horror</item>
+        <item>Thriller</item>
+        <item>Animation</item>
+        <item>Adventure</item>
+        <item>Mystery</item>
+    </string-array>
+
+</resources>
