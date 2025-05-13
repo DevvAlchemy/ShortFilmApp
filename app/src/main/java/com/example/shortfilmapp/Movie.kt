@@ -1,7 +1,7 @@
-package com.example.shortfilmapp.api
+package com.example.shortfilmapp
+
 
 data class Movie(
-    val id: Int,
     val title: String,
     val overview: String,
     val poster_path: String,

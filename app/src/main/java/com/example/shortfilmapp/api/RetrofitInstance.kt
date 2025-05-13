@@ -4,13 +4,14 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
-    private const val BASE_URL = "https://api.themoviedb.org/3/"
-
-    val api: TmdbApi by lazy {
+    private val retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl("https://api.themoviedb.org/3/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(TmdbApi::class.java)
+    }
+
+    val api: TmdbApi by lazy {
+        retrofit.create(TmdbApi::class.java)
     }
 }
