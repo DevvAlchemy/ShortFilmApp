@@ -1,8 +1,15 @@
 <resources>
-    <string name="app_name">ShortFilmApp</string>
-    <string name="list_of_short_films">List of short films</string>
-    <string name="select_genre">Select Genre</string>
-    <string name="movie_title">Movie Title</string>
+        <string name="app_name">Movie Trailers</string>
+        <string name="watch_trailer">Watch Trailer</string>
+        <string name="movie_poster">Movie Poster</string>
+        <string name="trailer_type">Trailer Type</string>
+        <string name="error_loading_movies">Error loading movies</string>
+        <string name="error_loading_trailers">Error loading trailers</string>
+        <string name="no_trailers_found">No trailers found for this movie</string>
+        <string name="retry">Retry</string>
+        <string name="popular_movies">Popular Movies</string>
+        <string name="movie_trailers">Movie Trailers</string>
+    <string name="tmdb_api_key">42ed2fc006c32959dcf686491a435ea7</string>
     <string-array name="genre_options">
         <item>All</item>
         <item>Drama</item>
