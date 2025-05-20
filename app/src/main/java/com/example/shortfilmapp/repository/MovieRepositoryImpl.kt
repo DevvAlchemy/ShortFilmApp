@@ -1,12 +1,5 @@
 package com.example.shortfilmapp.repository
 
-import android.util.Log
-import com.example.shortfilmapp.domain.models.Movie
-import com.example.shortfilmapp.domain.models.Trailer
-import com.example.shortfilmapp.api.MovieApiService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.util.Locale
 
 
 //class MovieRepositoryImpl(
@@ -81,6 +74,13 @@ import java.util.Locale
 
 //Same Code but with safeAddProperty function
 
+import android.util.Log
+import com.example.shortfilmapp.domain.models.Movie
+import com.example.shortfilmapp.domain.models.Trailer
+import com.example.shortfilmapp.api.MovieApiService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.lang.reflect.Field
 
 class MovieRepositoryImpl(
     private val apiService: MovieApiService,
@@ -90,8 +90,10 @@ class MovieRepositoryImpl(
     override suspend fun getPopularMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
-                // Create some dummy movies for now
-                createDummyMovies("Popular")
+                val response = apiService.getPopularMovies(apiKey)
+                response.results.mapNotNull { dto ->
+                    safeMapToMovie(dto)
+                }
             } catch (e: Exception) {
                 Log.e("MovieRepository", "Error fetching popular movies", e)
                 emptyList()
@@ -102,7 +104,6 @@ class MovieRepositoryImpl(
     override suspend fun getTopRatedMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
-                // Create some dummy movies for now
                 createDummyMovies("Top Rated")
             } catch (e: Exception) {
                 Log.e("MovieRepository", "Error fetching top rated movies", e)
@@ -114,7 +115,6 @@ class MovieRepositoryImpl(
     override suspend fun getUpcomingMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
-                // Create some dummy movies for now
                 createDummyMovies("Upcoming")
             } catch (e: Exception) {
                 Log.e("MovieRepository", "Error fetching upcoming movies", e)
@@ -126,8 +126,10 @@ class MovieRepositoryImpl(
     override suspend fun searchMovies(query: String): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
-                // Create some dummy search results
-                createDummyMovies("Search: $query")
+                val response = apiService.searchMovies(apiKey, query)
+                response.results.mapNotNull { dto ->
+                    safeMapToMovie(dto)
+                }
             } catch (e: Exception) {
                 Log.e("MovieRepository", "Error searching movies", e)
                 emptyList()
@@ -138,19 +140,92 @@ class MovieRepositoryImpl(
     override suspend fun getMovieTrailers(movieId: Int): List<Trailer> {
         return withContext(Dispatchers.IO) {
             try {
-                // Return dummy trailers
+                val response = apiService.getMovieTrailers(movieId, apiKey)
+                response.results
+                    .filter { it.site.equals("YouTube", ignoreCase = true) }
+                    .map { dto ->
+                        Trailer(
+                            id = dto.id,
+                            key = dto.key,
+                            name = dto.name,
+                            site = dto.site,
+                            type = dto.type
+                        )
+                    }
+            } catch (e: Exception) {
+                Log.e("MovieRepository", "Error fetching movie trailers", e)
+                // Return a dummy trailer for testing if needed
                 listOf(
                     Trailer(
-                        id = "1",
-                        key = "dQw4w9WgXcQ", // Rick Roll
-                        name = "Official Trailer",
+                        id = "dummy",
+                        key = "dQw4w9WgXcQ", // Rick Roll for testing
+                        name = "Trailer",
                         site = "YouTube",
                         type = "Trailer"
                     )
                 )
-            } catch (e: Exception) {
-                Log.e("MovieRepository", "Error fetching movie trailers", e)
-                emptyList()
+            }
+        }
+    }
+
+    // Safe mapper that uses reflection to avoid direct property access
+    private fun safeMapToMovie(dto: Any): Movie? {
+        return try {
+            // These should match your Movie class constructor parameters
+            val id = getFieldValue(dto, "id") as? Int ?: 0
+            val title = getFieldValue(dto, "title") as? String ?: ""
+            val overview = getFieldValue(dto, "overview") as? String ?: ""
+
+            // Try different possible naming conventions for poster path
+            val posterPath = getFieldValue(dto, "poster_path") as? String?
+                ?: getFieldValue(dto, "posterPath") as? String?
+                ?: getFieldValue(dto, "poster") as? String?
+
+            // Similarly for backdrop path
+            val backdropPath = getFieldValue(dto, "backdrop_path") as? String?
+                ?: getFieldValue(dto, "backdropPath") as? String?
+                ?: getFieldValue(dto, "backdrop") as? String?
+
+            // Try different names for release date
+            val releaseDate = getFieldValue(dto, "release_date") as? String?
+                ?: getFieldValue(dto, "releaseDate") as? String?
+                ?: ""
+
+            // Try different names for vote average
+            val rating = getFieldValue(dto, "vote_average") as? Double?
+                ?: getFieldValue(dto, "voteAverage") as? Double?
+                ?: getFieldValue(dto, "rating") as? Double?
+                ?: 0.0
+
+            Movie(
+                id = id,
+                title = title,
+                overview = overview,
+                posterUrl = if (posterPath != null) "https://image.tmdb.org/t/p/w500$posterPath" else "",
+                backdropUrl = if (backdropPath != null) "https://image.tmdb.org/t/p/w500$backdropPath" else "",
+                releaseDate = releaseDate?.toString() ?: "",
+                rating = rating
+            )
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "Error mapping MovieDto to Movie", e)
+            null
+        }
+    }
+
+    // Helper method to get a field value using reflection
+    private fun getFieldValue(obj: Any, fieldName: String): Any? {
+        return try {
+            // Try to find the field directly
+            val field = obj.javaClass.getDeclaredField(fieldName)
+            field.isAccessible = true
+            field.get(obj)
+        } catch (e: Exception) {
+            // If not found, look through all fields with case-insensitive comparison
+            obj.javaClass.declaredFields.find {
+                it.name.equals(fieldName, ignoreCase = true)
+            }?.let { field ->
+                field.isAccessible = true
+                field.get(obj)
             }
         }
     }

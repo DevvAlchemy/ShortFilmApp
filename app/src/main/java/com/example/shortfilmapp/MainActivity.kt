@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize RecyclerView and adapter
         movieAdapter = MovieAdapter { movie ->
-            navigateToTrailerPlayer(movie)
+            navigateToPlayerActivity(movie)
         }
 
         binding.moviesRecyclerView.apply {
@@ -170,10 +170,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun navigateToTrailerPlayer(movie: Movie) {
-        // Start PlayerActivity directly
+    private fun navigateToPlayerActivity(movie: Movie) {
         val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivity.EXTRA_VIDEO_ID, "dQw4w9WgXcQ") // Dummy trailer ID
+            putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
             putExtra(PlayerActivity.EXTRA_VIDEO_TITLE, movie.title)
         }
         startActivity(intent)

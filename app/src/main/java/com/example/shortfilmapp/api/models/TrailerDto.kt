@@ -7,5 +7,5 @@ data class TrailerDto(
     val site: String,
     val size: Int,
     val type: String,
-    val publishedAt: String
+//    val publishedAt: String
 )
