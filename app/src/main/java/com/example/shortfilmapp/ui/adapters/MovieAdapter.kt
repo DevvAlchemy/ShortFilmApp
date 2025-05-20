@@ -2,13 +2,20 @@ package com.example.shortfilmapp.ui.adapters
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.drawable.Drawable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.Toast
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.request.target.Target
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.example.shortfilmapp.MovieDetailActivity
+import com.bumptech.glide.request.RequestListener
+import com.example.shortfilmapp.PlayerActivity
 import com.example.shortfilmapp.R
 import com.example.shortfilmapp.databinding.ItemMovieBinding
 import com.example.shortfilmapp.domain.models.Movie
@@ -24,6 +31,7 @@ class MovieAdapter(private val onMovieClick: (Movie) -> Unit) :
         movies.addAll(newMovies)
         notifyDataSetChanged()
     }
+
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
         val binding = ItemMovieBinding.inflate(
@@ -65,30 +73,66 @@ class MovieAdapter(private val onMovieClick: (Movie) -> Unit) :
                 }
                 movieRating.setTextColor(ratingColor)
 
-                // Load poster image
-                Glide.with(itemView.context)
-                    .load(movie.posterUrl)
-                    .placeholder(R.drawable.placeholder_poster)
-                    .error(R.drawable.error_poster)
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(moviePoster)
+                // In your MovieAdapter.kt ViewHolder bind method
+                // Use a simpler Glide configuration
+                try {
+                    if (movie.posterUrl.isNotEmpty()) {
+                        Log.d("MovieAdapter", "Loading image from: ${movie.posterUrl}")
 
-                // Set up click listeners
+                        // Basic Glide configuration
+                        Glide.with(itemView.context)
+                            .load(movie.posterUrl)
+                            .placeholder(R.drawable.movie_placeholder)
+                            .error(R.drawable.movie_error)
+                            .into(binding.moviePoster)
+                    } else {
+                        Log.d("MovieAdapter", "Empty poster URL for movie: ${movie.title}")
+                        // Set error image directly
+                        binding.moviePoster.setImageResource(R.drawable.movie_error)
+                    }
+                } catch (e: Exception) {
+                    Log.e("MovieAdapter", "Error loading image", e)
+                    binding.moviePoster.setImageResource(R.drawable.movie_error)
+                }
+//                    .into(binding.moviePoster)
+//                // Set up click listeners
                 watchTrailerButton.setOnClickListener {
                     onMovieClick(movie)
                 }
 
+                // In your MovieAdapter.kt ViewHolder bind method
+                // Try loading a test image first to see if Glide is configured correctly
+                val testImageUrl = "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg" // Spider-Man: No Way Home poster
+                Log.d("MovieAdapter", "Loading test image from: $testImageUrl")
+
+                Glide.with(itemView.context)
+                    .load(testImageUrl)
+                    .placeholder(R.drawable.movie_placeholder)
+                    .error(R.drawable.movie_error)
+                    .into(binding.moviePoster)
+
+                // In your MovieAdapter.kt
+                // In your MovieAdapter.kt
                 root.setOnClickListener {
-                    // Navigate to details screen
-                    val intent = Intent(itemView.context, MovieDetailActivity::class.java).apply {
-                        putExtra(MovieDetailActivity.EXTRA_MOVIE, movie)
+                    try {
+                        // Use a simple Intent to open PlayerActivity without trying to load trailers
+                        val intent = Intent(itemView.context, PlayerActivity::class.java).apply {
+                            putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
+                            // Pass a placeholder video ID for testing
+                            putExtra(PlayerActivity.EXTRA_VIDEO_ID, "dQw4w9WgXcQ") // A known working YouTube video ID
+                            putExtra(PlayerActivity.EXTRA_VIDEO_TITLE, movie.title)
+                        }
+                        itemView.context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("MovieAdapter", "Error navigating to player", e)
+                        Toast.makeText(itemView.context, "Error opening trailer", Toast.LENGTH_SHORT).show()
                     }
-                    itemView.context.startActivity(intent)
+                }
                 }
             }
         }
+
     }
-}
                 // Make the entire card clickable
 //                root.setOnClickListener {
 //                    onMovieClick(movie)

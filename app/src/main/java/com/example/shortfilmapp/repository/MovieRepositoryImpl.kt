@@ -74,6 +74,7 @@ package com.example.shortfilmapp.repository
 
 //Same Code but with safeAddProperty function
 
+import android.R.attr.rating
 import android.util.Log
 import com.example.shortfilmapp.domain.models.Movie
 import com.example.shortfilmapp.domain.models.Trailer
@@ -87,12 +88,25 @@ class MovieRepositoryImpl(
     private val apiKey: String
 ) : MovieRepository {
 
+    // In your getPopularMovies method in MovieRepositoryImpl.kt
     override suspend fun getPopularMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.getPopularMovies(apiKey)
+
+                // Debug the raw response
+                val firstMovie = response.results.firstOrNull()
+                if (firstMovie != null) {
+                    Log.d("MovieRepository", "First movie title: ${firstMovie.title}")
+                    Log.d("MovieRepository", "First movie poster path: ${getFieldValue(firstMovie, "poster_path")}")
+                    Log.d("MovieRepository", "First movie backdrop path: ${getFieldValue(firstMovie, "backdrop_path")}")
+                }
+
                 response.results.mapNotNull { dto ->
-                    safeMapToMovie(dto)
+                    val movie = safeMapToMovie(dto)
+                    // Log the constructed URL
+                    Log.d("MovieRepository", "Mapped movie: ${movie?.title}, Poster URL: ${movie?.posterUrl}")
+                    movie
                 }
             } catch (e: Exception) {
                 Log.e("MovieRepository", "Error fetching popular movies", e)
@@ -168,7 +182,27 @@ class MovieRepositoryImpl(
         }
     }
 
-    // Safe mapper that uses reflection to avoid direct property access
+    // here
+
+    // In MovieRepositoryImpl.kt, add this logging function
+    private fun logMovieDetails(dto: Any, movie: Movie) {
+        try {
+            val posterPath = getFieldValue(dto, "poster_path")
+            val backdropPath = getFieldValue(dto, "backdrop_path")
+
+            Log.d("MovieRepository", "===== MOVIE DETAILS =====")
+            Log.d("MovieRepository", "Title: ${movie.title}")
+            Log.d("MovieRepository", "Raw poster_path: $posterPath")
+            Log.d("MovieRepository", "Raw backdrop_path: $backdropPath")
+            Log.d("MovieRepository", "Constructed posterUrl: ${movie.posterUrl}")
+            Log.d("MovieRepository", "Constructed backdropUrl: ${movie.backdropUrl}")
+            Log.d("MovieRepository", "=========================")
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "Error logging movie details", e)
+        }
+    }
+
+    // Update your safeMapToMovie function to use this logging
     private fun safeMapToMovie(dto: Any): Movie? {
         return try {
             // These should match your Movie class constructor parameters
@@ -197,15 +231,29 @@ class MovieRepositoryImpl(
                 ?: getFieldValue(dto, "rating") as? Double?
                 ?: 0.0
 
-            Movie(
+            val movie = Movie(
                 id = id,
                 title = title,
                 overview = overview,
-                posterUrl = if (posterPath != null) "https://image.tmdb.org/t/p/w500$posterPath" else "",
-                backdropUrl = if (backdropPath != null) "https://image.tmdb.org/t/p/w500$backdropPath" else "",
+                posterUrl = if (!posterPath.isNullOrEmpty()) {
+                    // Use this exact format for TMDB API
+                    "https://image.tmdb.org/t/p/w500$posterPath"
+                } else {
+                    ""
+                },
+                backdropUrl = if (!backdropPath.isNullOrEmpty()) {
+                    "https://image.tmdb.org/t/p/w500$backdropPath"
+                } else {
+                    ""
+                },
                 releaseDate = releaseDate?.toString() ?: "",
                 rating = rating
             )
+
+            // Log the details
+            logMovieDetails(dto, movie)
+
+            movie
         } catch (e: Exception) {
             Log.e("MovieRepository", "Error mapping MovieDto to Movie", e)
             null
