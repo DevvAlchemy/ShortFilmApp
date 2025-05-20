@@ -1,6 +1,9 @@
 package com.example.shortfilmapp.domain.models
 
-// domain/models/Movie.kt
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class Movie(
     val id: Int,
     val title: String,
@@ -9,4 +12,4 @@ data class Movie(
     val backdropUrl: String,
     val releaseDate: String,
     val rating: Double
-)
+) : Parcelable

@@ -1,7 +1,18 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+//    id("kotlin.kapt")
+    id("kotlin-parcelize")
+
 }
+
+//
+//buildscript {
+//    dependencies {
+//        classpath ("org.jetbrains.kotlin:kotlin-gradle-plugin:kotlin_version")
+//        classpath ("org.jetbrains.kotlin:kotlin-android-extensions:kotlin_version")
+//    }
+//}
 
 android {
     namespace = "com.example.shortfilmapp"

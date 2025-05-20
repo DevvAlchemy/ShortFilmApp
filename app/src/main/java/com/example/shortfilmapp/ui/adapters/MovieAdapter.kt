@@ -1,12 +1,14 @@
 package com.example.shortfilmapp.ui.adapters
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.example.shortfilmapp.MovieDetailActivity
 import com.example.shortfilmapp.R
 import com.example.shortfilmapp.databinding.ItemMovieBinding
 import com.example.shortfilmapp.domain.models.Movie
@@ -36,31 +38,32 @@ class MovieAdapter(private val onMovieClick: (Movie) -> Unit) :
 
     override fun getItemCount() = movies.size
 
+    // In MovieAdapter.kt
     inner class MovieViewHolder(private val binding: ItemMovieBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(movie: Movie) {
             binding.apply {
-                textViewTitle.text = movie.title
-                textViewReleaseDate.text = movie.releaseDate
-                textViewOverview.text = movie.overview
+                movieTitle.text = movie.title
+                movieReleaseDate.text = movie.releaseDate
+                movieOverview.text = movie.overview
+                movieRating.text = String.format("%.1f", movie.rating)
 
-                // Set rating (convert from 10 to 5 star scale)
-                val ratingOutOf5 = (movie.rating / 2).toFloat()
-                ratingBar.rating = ratingOutOf5
-                textViewRating.text = String.format("%.1f/10", movie.rating)
-
-                // Color code the rating text
-                textViewRating.setTextColor(
-                    ContextCompat.getColor(
+                // Set a color for the rating based on the score
+                val ratingColor = when {
+                    movie.rating >= 8.0 -> ContextCompat.getColor(
                         itemView.context,
-                        when {
-                            movie.rating >= 7.0 -> R.color.rating_good
-                            movie.rating >= 5.0 -> R.color.rating_average
-                            else -> R.color.rating_bad
-                        }
+                        R.color.rating_high
                     )
-                )
+
+                    movie.rating >= 6.0 -> ContextCompat.getColor(
+                        itemView.context,
+                        R.color.rating_medium
+                    )
+
+                    else -> ContextCompat.getColor(itemView.context, R.color.rating_low)
+                }
+                movieRating.setTextColor(ratingColor)
 
                 // Load poster image
                 Glide.with(itemView.context)
@@ -68,18 +71,29 @@ class MovieAdapter(private val onMovieClick: (Movie) -> Unit) :
                     .placeholder(R.drawable.placeholder_poster)
                     .error(R.drawable.error_poster)
                     .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(imageViewPoster)
+                    .into(moviePoster)
 
-                // Set click listener
-                buttonWatchTrailer.setOnClickListener {
+                // Set up click listeners
+                watchTrailerButton.setOnClickListener {
                     onMovieClick(movie)
                 }
 
-                // Make the entire card clickable
                 root.setOnClickListener {
-                    onMovieClick(movie)
+                    // Navigate to details screen
+                    val intent = Intent(itemView.context, MovieDetailActivity::class.java).apply {
+                        putExtra(MovieDetailActivity.EXTRA_MOVIE, movie)
+                    }
+                    itemView.context.startActivity(intent)
                 }
             }
         }
     }
 }
+                // Make the entire card clickable
+//                root.setOnClickListener {
+//                    onMovieClick(movie)
+//                }
+//            }
+//        }
+//    }
+//}

@@ -31,17 +31,16 @@ class MovieViewModel(
 
     fun loadPopularMovies() {
         viewModelScope.launch {
-            _moviesState.value = MoviesState.Loading
-
             try {
+                _moviesState.value = MoviesState.Loading
                 val movies = repository.getPopularMovies()
                 if (movies.isNotEmpty()) {
                     _moviesState.value = MoviesState.Success(movies)
                 } else {
-                    _moviesState.value = MoviesState.Error("No movies found")
+                    _moviesState.value = MoviesState.Empty("No movies found")
                 }
             } catch (e: Exception) {
-                _moviesState.value = MoviesState.Error(e.localizedMessage ?: "Unknown error")
+                _moviesState.value = MoviesState.Error("Failed to load movies: ${e.message}")
             }
         }
     }

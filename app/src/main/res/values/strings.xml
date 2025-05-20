@@ -10,6 +10,9 @@
         <string name="popular_movies">Popular Movies</string>
         <string name="movie_trailers">Movie Trailers</string>
     <string name="tmdb_api_key">42ed2fc006c32959dcf686491a435ea7</string>
+    <string name="movie_backdrop">Movie Backdrop</string>
+    <string name="overview">Overview</string>
+    <string name="rating">rating</string>
     <string-array name="genre_options">
         <item>All</item>
         <item>Drama</item>

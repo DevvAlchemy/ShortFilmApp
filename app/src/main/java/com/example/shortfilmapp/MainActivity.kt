@@ -26,8 +26,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupUI()
         setupViewModel()
+        setupUI()
         observeViewModel()
     }
 
@@ -47,9 +47,12 @@ class MainActivity : AppCompatActivity() {
             setHasFixedSize(true)
         }
 
-        // Setup refresh layout
+        // pull to refresh functionality
         binding.swipeRefreshLayout.setOnRefreshListener {
             viewModel.loadPopularMovies()
+        }
+        viewModel.moviesState.observe (this) { state ->
+            binding.swipeRefreshLayout.isRefreshing = state is MovieViewModel.MoviesState.Loading
         }
     }
 
