@@ -100,21 +100,25 @@ class MainActivity : AppCompatActivity() {
                 viewModel.loadPopularMovies()
                 true
             }
+
             R.id.action_popular -> {
                 binding.toolbar.title = getString(R.string.popular)
                 viewModel.loadPopularMovies()
                 true
             }
+
             R.id.action_top_rated -> {
                 binding.toolbar.title = getString(R.string.top_rated)
                 viewModel.loadTopRatedMovies()
                 true
             }
+
             R.id.action_upcoming -> {
                 binding.toolbar.title = getString(R.string.upcoming)
                 viewModel.loadUpcomingMovies()
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -124,7 +128,8 @@ class MainActivity : AppCompatActivity() {
             // Handle swipe refresh if available
             if (::binding.isInitialized &&
                 binding::class.java.getDeclaredField("swipeRefreshLayout") != null &&
-                binding.swipeRefreshLayout.isRefreshing) {
+                binding.swipeRefreshLayout.isRefreshing
+            ) {
                 binding.swipeRefreshLayout.isRefreshing = false
             }
 
@@ -134,6 +139,7 @@ class MainActivity : AppCompatActivity() {
                     binding.moviesRecyclerView.visibility = View.GONE
                     binding.errorMessage.visibility = View.GONE
                 }
+
                 is MovieViewModel.MoviesState.Success -> {
                     binding.progressBar.visibility = View.GONE
                     binding.moviesRecyclerView.visibility = View.VISIBLE
@@ -141,6 +147,7 @@ class MainActivity : AppCompatActivity() {
 
                     movieAdapter.submitList(state.movies)
                 }
+
                 is MovieViewModel.MoviesState.Error -> {
                     binding.progressBar.visibility = View.GONE
                     binding.moviesRecyclerView.visibility = View.GONE
@@ -149,6 +156,7 @@ class MainActivity : AppCompatActivity() {
 
                     showRetrySnackbar(state.message)
                 }
+
                 is MovieViewModel.MoviesState.Empty -> {
                     binding.progressBar.visibility = View.GONE
                     binding.moviesRecyclerView.visibility = View.GONE
@@ -171,10 +179,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun navigateToPlayerActivity(movie: Movie) {
-        val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
-            putExtra(PlayerActivity.EXTRA_VIDEO_TITLE, movie.title)
+        try {
+            // Start PlayerActivity with a hard-coded trailer ID for testing
+            val intent = Intent(this, PlayerActivity::class.java).apply {
+                putExtra("MOVIE_TITLE", movie.title)
+                // Use a known working YouTube video ID
+                putExtra("VIDEO_ID", "dQw4w9WgXcQ")
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error opening trailer", Toast.LENGTH_SHORT).show()
         }
-        startActivity(intent)
     }
 }

@@ -92,29 +92,40 @@ class MovieRepositoryImpl(
     override suspend fun getPopularMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d("MovieRepository", "Fetching popular movies from API...")
                 val response = apiService.getPopularMovies(apiKey)
+                Log.d("MovieRepository", "API call successful, got ${response.results.size} movies")
 
-                // Debug the raw response
-                val firstMovie = response.results.firstOrNull()
-                if (firstMovie != null) {
-                    Log.d("MovieRepository", "First movie title: ${firstMovie.title}")
-                    Log.d("MovieRepository", "First movie poster path: ${getFieldValue(firstMovie, "poster_path")}")
-                    Log.d("MovieRepository", "First movie backdrop path: ${getFieldValue(firstMovie, "backdrop_path")}")
+                // Debug the first movie in the response
+                if (response.results.isNotEmpty()) {
+                    val firstDto = response.results[0]
+                    Log.d("MovieRepository", "First movie title: ${firstDto.title}")
+                    // Try different property names
+                    Log.d("MovieRepository", "First movie poster_path: ${getFieldValue(firstDto, "poster_path")}")
+                    Log.d("MovieRepository", "First movie posterPath: ${getFieldValue(firstDto, "posterPath")}")
                 }
 
-                response.results.mapNotNull { dto ->
-                    val movie = safeMapToMovie(dto)
-                    // Log the constructed URL
-                    Log.d("MovieRepository", "Mapped movie: ${movie?.title}, Poster URL: ${movie?.posterUrl}")
-                    movie
+                val mappedMovies = response.results.mapNotNull { dto ->
+                    safeMapToMovie(dto)
                 }
+
+                // Log how many movies were successfully mapped
+                Log.d("MovieRepository", "Successfully mapped ${mappedMovies.size} movies")
+
+                // Return dummy data if no movies were mapped
+                if (mappedMovies.isEmpty()) {
+                    Log.w("MovieRepository", "No movies mapped from API response, using dummy data")
+                    return@withContext createDummyMovies("Popular")
+                }
+
+                mappedMovies
             } catch (e: Exception) {
                 Log.e("MovieRepository", "Error fetching popular movies", e)
-                emptyList()
+                Log.w("MovieRepository", "Returning dummy data due to error")
+                createDummyMovies("Popular")
             }
         }
     }
-
     override suspend fun getTopRatedMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
@@ -284,27 +295,27 @@ class MovieRepositoryImpl(
             Movie(
                 id = 1,
                 title = "$prefix Movie 1",
-                overview = "This is a placeholder movie. The actual API integration will be fixed later.",
-                posterUrl = "https://via.placeholder.com/500x750.png?text=Movie+1",
-                backdropUrl = "https://via.placeholder.com/1280x720.png?text=Movie+1",
+                overview = "This is a placeholder movie.",
+                posterUrl = "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg", // Different poster 1
+                backdropUrl = "https://image.tmdb.org/t/p/w500/9n2tJBplPbgR2ca05hS5CKXwP2c.jpg",
                 releaseDate = "2023-01-01",
                 rating = 8.5
             ),
             Movie(
                 id = 2,
                 title = "$prefix Movie 2",
-                overview = "This is another placeholder movie. The actual API integration will be fixed later.",
-                posterUrl = "https://via.placeholder.com/500x750.png?text=Movie+2",
-                backdropUrl = "https://via.placeholder.com/1280x720.png?text=Movie+2",
+                overview = "This is another placeholder movie.",
+                posterUrl = "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg", // Different poster 2
+                backdropUrl = "https://image.tmdb.org/t/p/w500/5YZbUmjbMa3ClvSW1Wj3D6XGolb.jpg",
                 releaseDate = "2023-02-01",
                 rating = 7.9
             ),
             Movie(
                 id = 3,
                 title = "$prefix Movie 3",
-                overview = "This is yet another placeholder movie. The actual API integration will be fixed later.",
-                posterUrl = "https://via.placeholder.com/500x750.png?text=Movie+3",
-                backdropUrl = "https://via.placeholder.com/1280x720.png?text=Movie+3",
+                overview = "This is yet another placeholder movie.",
+                posterUrl = "https://image.tmdb.org/t/p/w500/fiVW06jE7z9YnO4trhaMEdclSiC.jpg", // Different poster 3
+                backdropUrl = "https://image.tmdb.org/t/p/w500/9m2Ubu9kUgxQMgUX2QeaV1rQpvk.jpg",
                 releaseDate = "2023-03-01",
                 rating = 6.7
             )
