@@ -16,45 +16,75 @@ class MovieViewModel(
     private val _moviesState = MutableLiveData<MoviesState>()
     val moviesState: LiveData<MoviesState> = _moviesState
 
-    private val _trailers = MutableLiveData<List<Trailer>>()
-    val trailers: LiveData<List<Trailer>> = _trailers
-
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> = _error
-
-    private val _apiKey = MutableLiveData<String>()
-
-    fun setApiKey(apiKey: String) {
-        _apiKey.value = apiKey
-        loadPopularMovies()
-    }
-
     fun loadPopularMovies() {
         viewModelScope.launch {
+            _moviesState.value = MoviesState.Loading
+
             try {
-                _moviesState.value = MoviesState.Loading
                 val movies = repository.getPopularMovies()
                 if (movies.isNotEmpty()) {
                     _moviesState.value = MoviesState.Success(movies)
                 } else {
-                    _moviesState.value = MoviesState.Empty("No movies found")
+                    _moviesState.value = MoviesState.Empty("No popular movies found")
                 }
             } catch (e: Exception) {
-                _moviesState.value = MoviesState.Error("Failed to load movies: ${e.message}")
+                _moviesState.value = MoviesState.Error(e.localizedMessage ?: "Unknown error")
             }
         }
     }
 
-    fun loadMovieTrailers(movieId: Int) {
+    fun loadTopRatedMovies() {
         viewModelScope.launch {
+            _moviesState.value = MoviesState.Loading
+
             try {
-                val trailerList = repository.getMovieTrailers(movieId)
-                _trailers.value = trailerList
-                if (trailerList.isEmpty()) {
-                    _error.value = "No trailers found for this movie"
+                val movies = repository.getTopRatedMovies()
+                if (movies.isNotEmpty()) {
+                    _moviesState.value = MoviesState.Success(movies)
+                } else {
+                    _moviesState.value = MoviesState.Empty("No top rated movies found")
                 }
             } catch (e: Exception) {
-                _error.value = e.localizedMessage ?: "Unknown error"
+                _moviesState.value = MoviesState.Error(e.localizedMessage ?: "Unknown error")
+            }
+        }
+    }
+
+    fun loadUpcomingMovies() {
+        viewModelScope.launch {
+            _moviesState.value = MoviesState.Loading
+
+            try {
+                val movies = repository.getUpcomingMovies()
+                if (movies.isNotEmpty()) {
+                    _moviesState.value = MoviesState.Success(movies)
+                } else {
+                    _moviesState.value = MoviesState.Empty("No upcoming movies found")
+                }
+            } catch (e: Exception) {
+                _moviesState.value = MoviesState.Error(e.localizedMessage ?: "Unknown error")
+            }
+        }
+    }
+
+    fun searchMovies(query: String) {
+        if (query.isBlank()) {
+            loadPopularMovies()
+            return
+        }
+
+        viewModelScope.launch {
+            _moviesState.value = MoviesState.Loading
+
+            try {
+                val movies = repository.searchMovies(query)
+                if (movies.isNotEmpty()) {
+                    _moviesState.value = MoviesState.Success(movies)
+                } else {
+                    _moviesState.value = MoviesState.Empty("No movies found for '$query'")
+                }
+            } catch (e: Exception) {
+                _moviesState.value = MoviesState.Error(e.localizedMessage ?: "Unknown error")
             }
         }
     }

@@ -13,6 +13,13 @@
     <string name="movie_backdrop">Movie Backdrop</string>
     <string name="overview">Overview</string>
     <string name="rating">rating</string>
+    <string name="search">search</string>
+    <string name="refresh">refresh</string>
+    <string name="search_hint">Search for movies…</string>
+    <string name="categories">categaries</string>
+    <string name="popular">popular</string>
+    <string name="top_rated">top rated</string>
+    <string name="upcoming">upcoming</string>
     <string-array name="genre_options">
         <item>All</item>
         <item>Drama</item>
