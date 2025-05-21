@@ -15,4 +15,5 @@
     <color name="rating_high">#4CAF50</color>
     <color name="rating_medium">#FFC107</color>
     <color name="rating_low">#F44336</color>
+    <color name="snackbar_action">#FF4081</color>
 </resources>

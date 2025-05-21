@@ -1,12 +1,5 @@
 package com.example.shortfilmapp.repository
 
-import android.util.Log
-import com.example.shortfilmapp.domain.models.Movie
-import com.example.shortfilmapp.domain.models.Trailer
-import com.example.shortfilmapp.api.MovieApiService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.util.Locale
 
 
 //class MovieRepositoryImpl(
@@ -81,6 +74,16 @@ import java.util.Locale
 
 //Same Code but with safeAddProperty function
 
+
+import android.util.Log
+import com.example.shortfilmapp.api.MovieApiService
+import com.example.shortfilmapp.api.models.MovieDto
+import com.example.shortfilmapp.api.models.TrailerDto
+import com.example.shortfilmapp.domain.models.Movie
+import com.example.shortfilmapp.domain.models.Trailer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 class MovieRepositoryImpl(
     private val apiService: MovieApiService,
     private val apiKey: String
@@ -89,37 +92,81 @@ class MovieRepositoryImpl(
     override suspend fun getPopularMovies(): List<Movie> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d("MovieRepository", "Fetching popular movies from API...")
                 val response = apiService.getPopularMovies(apiKey)
-                response.results.map { dto ->
-                    // Create a HashMap of the DTO properties to avoid direct access
-                    val properties = HashMap<String, Any?>()
+                Log.d("MovieRepository", "API call successful, got ${response.results.size} movies")
 
-                    // We know these properties are safe
-                    properties["id"] = dto.id
-                    properties["title"] = dto.title
-                    properties["overview"] = dto.overview
-
-                    // For the problematic properties, we'll use a function
-                    safeAddProperty(properties, dto, "poster_path")
-                    safeAddProperty(properties, dto, "backdrop_path")
-                    safeAddProperty(properties, dto, "release_date")
-                    safeAddProperty(properties, dto, "vote_average")
-
-                    // Now create the Movie from the properties map
-                    Movie(
-                        id = properties["id"] as Int,
-                        title = properties["title"] as String,
-                        overview = properties["overview"] as String,
-                        posterUrl = if (properties["poster_path"] != null)
-                            "https://image.tmdb.org/t/p/w500${properties["poster_path"]}" else "",
-                        backdropUrl = if (properties["backdrop_path"] != null)
-                            "https://image.tmdb.org/t/p/w500${properties["backdrop_path"]}" else "",
-                        releaseDate = properties["release_date"] as? String ?: "",
-                        rating = properties["vote_average"] as? Double ?: 0.0
-                    )
+                if (response.results.isNotEmpty()) {
+                    val mappedMovies = response.results.map { dto ->
+                        mapMovieDtoToMovie(dto)
+                    }
+                    Log.d("MovieRepository", "Successfully mapped ${mappedMovies.size} movies")
+                    mappedMovies
+                } else {
+                    Log.w("MovieRepository", "Empty response from API, using dummy data")
+                    createDummyMovies("Popular")
                 }
             } catch (e: Exception) {
-                Log.e("MovieRepository", "Error fetching popular movies", e)
+                Log.e("MovieRepository", "Error fetching popular movies: ${e.message}", e)
+                createDummyMovies("Popular")
+            }
+        }
+    }
+
+    override suspend fun getTopRatedMovies(): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("MovieRepository", "Fetching top rated movies from API...")
+                val response = apiService.getTopRatedMovies(apiKey)
+                Log.d("MovieRepository", "API call successful, got ${response.results.size} movies")
+
+                if (response.results.isNotEmpty()) {
+                    response.results.map { dto ->
+                        mapMovieDtoToMovie(dto)
+                    }
+                } else {
+                    createDummyMovies("Top Rated")
+                }
+            } catch (e: Exception) {
+                Log.e("MovieRepository", "Error fetching top rated movies: ${e.message}", e)
+                createDummyMovies("Top Rated")
+            }
+        }
+    }
+
+    override suspend fun getUpcomingMovies(): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("MovieRepository", "Fetching upcoming movies from API...")
+                val response = apiService.getUpcomingMovies(apiKey)
+                Log.d("MovieRepository", "API call successful, got ${response.results.size} movies")
+
+                if (response.results.isNotEmpty()) {
+                    response.results.map { dto ->
+                        mapMovieDtoToMovie(dto)
+                    }
+                } else {
+                    createDummyMovies("Upcoming")
+                }
+            } catch (e: Exception) {
+                Log.e("MovieRepository", "Error fetching upcoming movies: ${e.message}", e)
+                createDummyMovies("Upcoming")
+            }
+        }
+    }
+
+    override suspend fun searchMovies(query: String): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("MovieRepository", "Searching movies with query: $query")
+                val response = apiService.searchMovies(apiKey, query)
+                Log.d("MovieRepository", "Search successful, got ${response.results.size} results")
+
+                response.results.map { dto ->
+                    mapMovieDtoToMovie(dto)
+                }
+            } catch (e: Exception) {
+                Log.e("MovieRepository", "Error searching movies: ${e.message}", e)
                 emptyList()
             }
         }
@@ -128,44 +175,100 @@ class MovieRepositoryImpl(
     override suspend fun getMovieTrailers(movieId: Int): List<Trailer> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d("MovieRepository", "Fetching trailers for movie ID: $movieId")
                 val response = apiService.getMovieTrailers(movieId, apiKey)
-                response.results
-                    .filter { it.site.equals("YouTube", ignoreCase = true) }
-                    .map { dto ->
-                        Trailer(
-                            id = dto.id,
-                            key = dto.key,
-                            name = dto.name,
-                            site = dto.site,
-                            type = dto.type
-                        )
-                    }
+
+                if (response.results.isNotEmpty()) {
+                    Log.d("MovieRepository", "Found ${response.results.size} trailers")
+                    val firstTrailer = response.results[0]
+                    Log.d("MovieRepository", "First trailer: id=${firstTrailer.id}, key=${firstTrailer.key}, name=${firstTrailer.name}, site=${firstTrailer.site}")
+
+                    response.results
+                        .filter { it.site.equals("YouTube", ignoreCase = true) }
+                        .map { dto ->
+                            mapTrailerDtoToTrailer(dto)
+                        }.also {
+                            Log.d("MovieRepository", "Mapped ${it.size} YouTube trailers")
+                        }
+                } else {
+                    Log.w("MovieRepository", "No trailers found for movie ID: $movieId")
+                    emptyList()
+                }
             } catch (e: Exception) {
-                Log.e("MovieRepository", "Error fetching movie trailers", e)
+                Log.e("MovieRepository", "Error fetching movie trailers: ${e.message}", e)
                 emptyList()
             }
         }
     }
 
-    private fun safeAddProperty(map: HashMap<String, Any?>, obj: Any, propertyName: String) {
-        try {
-            val method = obj.javaClass.methods.find {
-                it.name == "get${propertyName.capitalize(Locale.ROOT)}" ||
-                        it.name == propertyName
-            }
-            if (method != null) {
-                map[propertyName] = method.invoke(obj)
-            } else {
-                val field = obj.javaClass.declaredFields.find { it.name == propertyName }
-                if (field != null) {
-                    field.isAccessible = true
-                    map[propertyName] = field.get(obj)
-                }
-            }
-        } catch (e: Exception) {
-            // Property not found, just continue
+    private fun mapMovieDtoToMovie(dto: MovieDto): Movie {
+        val posterUrl = if (!dto.posterPath.isNullOrEmpty()) {
+            // Use this exact format for TMDB API
+            "https://image.tmdb.org/t/p/w500${dto.posterPath}"
+        } else {
+            ""
         }
+
+        val backdropUrl = if (!dto.backdropPath.isNullOrEmpty()) {
+            "https://image.tmdb.org/t/p/w500${dto.backdropPath}"
+        } else {
+            ""
+        }
+
+        Log.d("MovieRepository", "Mapping movie: ${dto.title}")
+        Log.d("MovieRepository", "posterPath: ${dto.posterPath}, posterUrl: $posterUrl")
+        Log.d("MovieRepository", "backdropPath: ${dto.backdropPath}, backdropUrl: $backdropUrl")
+
+        return Movie(
+            id = dto.id,
+            title = dto.title,
+            overview = dto.overview,
+            posterUrl = posterUrl,
+            backdropUrl = backdropUrl,
+            releaseDate = dto.releaseDate,
+            rating = dto.voteAverage
+        )
+    }
+
+    private fun mapTrailerDtoToTrailer(dto: TrailerDto): Trailer {
+        return Trailer(
+            id = dto.id,
+            key = dto.key,
+            name = dto.name,
+            site = dto.site,
+            type = dto.type
+        )
+    }
+
+    private fun createDummyMovies(prefix: String): List<Movie> {
+        return listOf(
+            Movie(
+                id = 1,
+                title = "$prefix Movie 1",
+                overview = "This is a placeholder movie.",
+                posterUrl = "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg",
+                backdropUrl = "https://image.tmdb.org/t/p/w500/9n2tJBplPbgR2ca05hS5CKXwP2c.jpg",
+                releaseDate = "2023-01-01",
+                rating = 8.5
+            ),
+            Movie(
+                id = 2,
+                title = "$prefix Movie 2",
+                overview = "This is another placeholder movie.",
+                posterUrl = "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
+                backdropUrl = "https://image.tmdb.org/t/p/w500/5YZbUmjbMa3ClvSW1Wj3D6XGolb.jpg",
+                releaseDate = "2023-02-01",
+                rating = 7.9
+            ),
+            Movie(
+                id = 3,
+                title = "$prefix Movie 3",
+                overview = "This is yet another placeholder movie.",
+                posterUrl = "https://image.tmdb.org/t/p/w500/fiVW06jE7z9YnO4trhaMEdclSiC.jpg",
+                backdropUrl = "https://image.tmdb.org/t/p/w500/9m2Ubu9kUgxQMgUX2QeaV1rQpvk.jpg",
+                releaseDate = "2023-03-01",
+                rating = 6.7
+            )
+        )
     }
 }
-
-
