@@ -4,5 +4,5 @@ import com.example.shortfilmapp.domain.models.Trailer
 
 data class TrailerResponse(
     val id: Int,
-    val results: List<Trailer>
+    val results: List<TrailerDto>
 )

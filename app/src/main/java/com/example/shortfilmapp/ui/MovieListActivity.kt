@@ -22,6 +22,8 @@ import com.example.shortfilmapp.ui.adapters.MovieAdapter
 import com.example.shortfilmapp.viewmodel.MovieViewModel
 import com.example.shortfilmapp.viewmodel.ViewModelFactory
 import com.google.android.material.snackbar.Snackbar
+import android.app.AlertDialog
+
 
 class MovieListActivity : AppCompatActivity() {
 
@@ -105,16 +107,19 @@ class MovieListActivity : AppCompatActivity() {
                 viewModel.loadPopularMovies()
                 true
             }
+
             R.id.action_top_rated -> {
                 binding.toolbar.title = getString(R.string.top_rated)
                 viewModel.loadTopRatedMovies()
                 true
             }
+
             R.id.action_upcoming -> {
                 binding.toolbar.title = getString(R.string.upcoming)
                 viewModel.loadUpcomingMovies()
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -127,6 +132,7 @@ class MovieListActivity : AppCompatActivity() {
                     binding.recyclerViewMovies.visibility = View.GONE
                     binding.textViewError.visibility = View.GONE
                 }
+
                 is MovieViewModel.MoviesState.Success -> {
                     binding.progressBar.visibility = View.GONE
                     binding.recyclerViewMovies.visibility = View.VISIBLE
@@ -134,6 +140,7 @@ class MovieListActivity : AppCompatActivity() {
 
                     movieAdapter.submitList(state.movies)
                 }
+
                 is MovieViewModel.MoviesState.Error -> {
                     binding.progressBar.visibility = View.GONE
                     binding.recyclerViewMovies.visibility = View.GONE
@@ -142,6 +149,7 @@ class MovieListActivity : AppCompatActivity() {
                     binding.textViewError.text = state.message
                     showRetrySnackbar(state.message)
                 }
+
                 is MovieViewModel.MoviesState.Empty -> {
                     binding.progressBar.visibility = View.GONE
                     binding.recyclerViewMovies.visibility = View.GONE
@@ -165,11 +173,43 @@ class MovieListActivity : AppCompatActivity() {
     }
 
     private fun navigateToTrailerPlayer(movie: Movie) {
-        val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra("MOVIE_ID", movie.id)
-            putExtra("VIDEO_ID", "dQw4w9WgXcQ") // Known working ID for testing
-            putExtra("MOVIE_TITLE", movie.title)
+        // Show loading indicator
+        val loadingDialog = android.app.AlertDialog.Builder(this)
+            .setMessage("Loading trailer...")
+            .setCancelable(false)
+            .create()
+        loadingDialog.show()
+
+        viewModel.getMovieTrailers(movie.id) { trailers ->
+            // Dismiss loading dialog
+            loadingDialog.dismiss()
+
+            if (trailers.isNotEmpty()) {
+                // Find the first trailer
+                val trailer = trailers.firstOrNull {
+                    it.type.equals("Trailer", ignoreCase = true)
+                } ?: trailers.first()
+
+                // Launch player with the actual trailer
+                val intent = Intent(this, PlayerActivity::class.java).apply {
+                    putExtra("VIDEO_ID", trailer.key)
+                    putExtra("MOVIE_TITLE", movie.title)
+                }
+                startActivity(intent)
+            } else {
+                // No trailers found, use fallback
+                Toast.makeText(
+                    this,
+                    "No trailers found. Playing sample trailer.",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                val intent = Intent(this, PlayerActivity::class.java).apply {
+                    putExtra("VIDEO_ID", "dQw4w9WgXcQ") // Fallback trailer
+                    putExtra("MOVIE_TITLE", movie.title)
+                }
+                startActivity(intent)
+            }
         }
-        startActivity(intent)
     }
 }

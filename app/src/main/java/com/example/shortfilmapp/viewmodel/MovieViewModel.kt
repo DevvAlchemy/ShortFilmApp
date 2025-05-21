@@ -1,5 +1,6 @@
 package com.example.shortfilmapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -8,6 +9,8 @@ import com.example.shortfilmapp.domain.models.Movie
 import com.example.shortfilmapp.domain.models.Trailer
 import com.example.shortfilmapp.repository.MovieRepository
 import kotlinx.coroutines.launch
+import android.app.AlertDialog
+
 
 class MovieViewModel(
     private val repository: MovieRepository
@@ -95,6 +98,7 @@ class MovieViewModel(
                 val trailers = repository.getMovieTrailers(movieId)
                 callback(trailers)
             } catch (e: Exception) {
+                Log.e("MovieViewModel", "Error fetching trailers", e)
                 callback(emptyList())
             }
         }
